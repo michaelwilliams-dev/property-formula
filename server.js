@@ -1,5 +1,5 @@
 // server.js
-// ISO Timestamp: 🕒 2025-07-30T17:40:00Z
+// ISO Timestamp: 🕒 2025-07-30T18:00:00Z
 
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 3002;
 // 🕒 Startup log
 console.log(`🕒 Server started at ${new Date().toISOString()}`);
 
-// ✅ File paths
+// ✅ File path setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -61,7 +61,7 @@ function getTopChunks(queryEmbedding, k = 5) {
     .slice(0, k);
 }
 
-// 📮 Blog generation route
+// 📮 /api/blog-draft
 app.post('/api/blog-draft', async (req, res) => {
   const { topic, email } = req.body;
   console.log("🔁 Received blog draft request:", topic);
@@ -91,13 +91,17 @@ app.post('/api/blog-draft', async (req, res) => {
       temperature: 0.6
     });
 
-    if (!completion?.choices?.[0]?.message?.content) {
-      throw new Error('OpenAI returned empty blog content.');
+    // 🧪 Debug OpenAI response
+    console.log("🧪 OpenAI raw response:", JSON.stringify(completion, null, 2));
+
+    // 🔐 Check that content exists
+    if (!completion?.choices || !completion.choices[0] || !completion.choices[0].message?.content) {
+      throw new Error('OpenAI returned malformed or empty blog content.');
     }
 
     const blogText = completion.choices[0].message.content;
 
-    // ✉️ Optional email
+    // ✉️ Email if requested
     if (email && email.includes('@')) {
       try {
         const pdfDoc = new PDFDocument();
@@ -159,7 +163,7 @@ app.post('/api/blog-draft', async (req, res) => {
   }
 });
 
-// 🟢 Health check
+// ✅ Health check
 app.get('/', (req, res) => {
   res.send('PropertyFormula assistant is live.');
 });
