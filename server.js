@@ -1,5 +1,5 @@
 // server.js
-// ISO Timestamp: 🕒 2025-07-30T18:45:00Z
+// ISO Timestamp: 🕒 2025-07-30T18:50:00Z
 
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -18,9 +18,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// ✅ Startup log
+// ✅ Log version
 console.log(`🕒 Server started at ${new Date().toISOString()}`);
-console.log("🔒 VERSION CHECK: 2025-07-30T18:45Z — new version deployed");
+console.log("🔒 VERSION CHECK: 2025-07-30T18:50Z — OpenAI try/catch enabled");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,7 +28,7 @@ const __dirname = path.dirname(__filename);
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 🔐 OpenAI
+// 🔐 OpenAI setup
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // 📁 Load vector index
@@ -43,7 +43,7 @@ try {
   process.exit(1);
 }
 
-// 🔍 Similarity logic
+// 🔍 Similarity
 function cosineSimilarity(a, b) {
   const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
   const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
@@ -53,15 +53,12 @@ function cosineSimilarity(a, b) {
 
 function getTopChunks(queryEmbedding, k = 5) {
   return vectorIndex
-    .map(item => ({
-      ...item,
-      score: cosineSimilarity(queryEmbedding, item.vector)
-    }))
+    .map(item => ({ ...item, score: cosineSimilarity(queryEmbedding, item.vector) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, k);
 }
 
-// 📮 /api/blog-draft
+// 📮 Blog draft route
 app.post('/api/blog-draft', async (req, res) => {
   const { topic, email } = req.body;
   console.log("🔁 Received blog draft request:", topic);
@@ -85,11 +82,17 @@ app.post('/api/blog-draft', async (req, res) => {
 
     const prompt = `We are RICS chartered surveyors and valuers. Write a professional blog post on the topic: "${topic}". Use only the content below. Do not make anything up.\n\nDocuments:\n${context}\n\nInclude headline, intro, key points, and wrap-up.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.6
-    });
+    let completion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.6
+      });
+    } catch (error) {
+      console.error("❌ OpenAI API call failed:", error.message);
+      return res.status(500).json({ error: "OpenAI API failed: " + error.message });
+    }
 
     console.log("🧪 OpenAI raw response:", JSON.stringify(completion, null, 2));
 
@@ -98,14 +101,13 @@ app.post('/api/blog-draft', async (req, res) => {
     }
 
     const first = completion.choices[0];
-
     if (!first || !first.message || !first.message.content) {
-      throw new Error('OpenAI returned a blank or invalid message.');
+      throw new Error('OpenAI returned an empty or invalid message.');
     }
 
     const blogText = first.message.content;
 
-    // ✉️ Optional Mailjet email
+    // ✉️ Send email if requested
     if (email && email.includes('@')) {
       try {
         const pdfDoc = new PDFDocument();
@@ -115,7 +117,9 @@ app.post('/api/blog-draft', async (req, res) => {
         pdfDoc.end();
 
         const doc = new Document({
-          sections: [{ children: [new Paragraph({ children: [new TextRun(blogText)] })] }]
+          sections: [{
+            children: [new Paragraph({ children: [new TextRun(blogText)] })],
+          }],
         });
         const docBuffer = await Packer.toBuffer(doc);
 
@@ -165,7 +169,7 @@ app.post('/api/blog-draft', async (req, res) => {
   }
 });
 
-// ✅ Health check
+// 🟢 Health check
 app.get('/', (req, res) => {
   res.send('PropertyFormula assistant is live.');
 });
