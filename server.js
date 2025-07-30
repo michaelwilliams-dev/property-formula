@@ -1,5 +1,5 @@
 // server.js
-// ISO Timestamp: 🕒 2025-07-30T17:30:00Z
+// ISO Timestamp: 🕒 2025-07-30T17:40:00Z
 
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 3002;
 // 🕒 Startup log
 console.log(`🕒 Server started at ${new Date().toISOString()}`);
 
-// ✅ Single declaration — no duplicates
+// ✅ File paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -43,7 +43,7 @@ try {
   process.exit(1);
 }
 
-// 🧠 Similarity helpers
+// 🔍 Similarity logic
 function cosineSimilarity(a, b) {
   const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
   const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
@@ -61,7 +61,7 @@ function getTopChunks(queryEmbedding, k = 5) {
     .slice(0, k);
 }
 
-// 📨 Blog endpoint
+// 📮 Blog generation route
 app.post('/api/blog-draft', async (req, res) => {
   const { topic, email } = req.body;
   console.log("🔁 Received blog draft request:", topic);
@@ -91,8 +91,13 @@ app.post('/api/blog-draft', async (req, res) => {
       temperature: 0.6
     });
 
+    if (!completion?.choices?.[0]?.message?.content) {
+      throw new Error('OpenAI returned empty blog content.');
+    }
+
     const blogText = completion.choices[0].message.content;
 
+    // ✉️ Optional email
     if (email && email.includes('@')) {
       try {
         const pdfDoc = new PDFDocument();
@@ -154,7 +159,7 @@ app.post('/api/blog-draft', async (req, res) => {
   }
 });
 
-// ✅ Health check
+// 🟢 Health check
 app.get('/', (req, res) => {
   res.send('PropertyFormula assistant is live.');
 });
