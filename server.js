@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3002;
 
 // ✅ Log version
 console.log(`🕒 Server started at ${new Date().toISOString()}`);
-console.log("🔒 VERSION CHECK: 2025-07-30T18:50Z — OpenAI try/catch enabled");
+console.log("🔒 VERSION CHECK: 2025-07-30T18:28Z — OpenAI try/catch enabled");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
