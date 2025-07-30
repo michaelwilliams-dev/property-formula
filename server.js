@@ -1,5 +1,5 @@
 // server.js
-// ISO Timestamp: 🕒 2025-07-30T18:25:00Z
+// ISO Timestamp: 🕒 2025-07-30T18:45:00Z
 
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -18,7 +18,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
+// ✅ Startup log
 console.log(`🕒 Server started at ${new Date().toISOString()}`);
+console.log("🔒 VERSION CHECK: 2025-07-30T18:45Z — new version deployed");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,8 +28,10 @@ const __dirname = path.dirname(__filename);
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 🔐 OpenAI
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// 📁 Load vector index
 const VECTOR_INDEX_PATH = path.resolve(__dirname, './vector_index.json');
 let vectorIndex = [];
 try {
@@ -39,6 +43,7 @@ try {
   process.exit(1);
 }
 
+// 🔍 Similarity logic
 function cosineSimilarity(a, b) {
   const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
   const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
@@ -56,6 +61,7 @@ function getTopChunks(queryEmbedding, k = 5) {
     .slice(0, k);
 }
 
+// 📮 /api/blog-draft
 app.post('/api/blog-draft', async (req, res) => {
   const { topic, email } = req.body;
   console.log("🔁 Received blog draft request:", topic);
@@ -99,6 +105,7 @@ app.post('/api/blog-draft', async (req, res) => {
 
     const blogText = first.message.content;
 
+    // ✉️ Optional Mailjet email
     if (email && email.includes('@')) {
       try {
         const pdfDoc = new PDFDocument();
@@ -108,7 +115,7 @@ app.post('/api/blog-draft', async (req, res) => {
         pdfDoc.end();
 
         const doc = new Document({
-          sections: [{ children: [new Paragraph({ children: [new TextRun(blogText)] })] }],
+          sections: [{ children: [new Paragraph({ children: [new TextRun(blogText)] })] }]
         });
         const docBuffer = await Packer.toBuffer(doc);
 
@@ -158,10 +165,12 @@ app.post('/api/blog-draft', async (req, res) => {
   }
 });
 
+// ✅ Health check
 app.get('/', (req, res) => {
   res.send('PropertyFormula assistant is live.');
 });
 
+// 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 PropertyFormula backend running at http://localhost:${PORT}`);
 });
