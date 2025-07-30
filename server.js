@@ -24,7 +24,7 @@ console.log(`🕒 Server started at ${new Date().toISOString()}`);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(bodyParser.json());
-app.use('/frontend', express.static(path.join(__dirname, 'frontend')));
+app.use(express.static(path.join(__dirname, 'public')));
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const VECTOR_INDEX_PATH = path.resolve(__dirname, './vector_index.json');
