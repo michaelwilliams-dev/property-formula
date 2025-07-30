@@ -1,5 +1,5 @@
 // server.js
-// ISO Timestamp: 🕒 2025-07-30T18:50:00Z
+// ISO Timestamp: 🕒 2025-07-30T18:58:00Z
 
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -18,9 +18,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// ✅ Log version
 console.log(`🕒 Server started at ${new Date().toISOString()}`);
-console.log("🔒 VERSION CHECK: 2025-07-30T18:28Z — OpenAI try/catch enabled");
+console.log("🔒 VERSION CHECK: 2025-07-30T18:58Z — wrapped OpenAI with internal log");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,10 +27,8 @@ const __dirname = path.dirname(__filename);
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 🔐 OpenAI setup
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// 📁 Load vector index
 const VECTOR_INDEX_PATH = path.resolve(__dirname, './vector_index.json');
 let vectorIndex = [];
 try {
@@ -43,7 +40,6 @@ try {
   process.exit(1);
 }
 
-// 🔍 Similarity
 function cosineSimilarity(a, b) {
   const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
   const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
@@ -58,7 +54,6 @@ function getTopChunks(queryEmbedding, k = 5) {
     .slice(0, k);
 }
 
-// 📮 Blog draft route
 app.post('/api/blog-draft', async (req, res) => {
   const { topic, email } = req.body;
   console.log("🔁 Received blog draft request:", topic);
@@ -89,12 +84,12 @@ app.post('/api/blog-draft', async (req, res) => {
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.6
       });
+
+      console.log("🧪 OpenAI raw response:", JSON.stringify(completion, null, 2));
     } catch (error) {
       console.error("❌ OpenAI API call failed:", error.message);
       return res.status(500).json({ error: "OpenAI API failed: " + error.message });
     }
-
-    console.log("🧪 OpenAI raw response:", JSON.stringify(completion, null, 2));
 
     if (!completion || !completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
       throw new Error('OpenAI returned no choices.');
@@ -107,7 +102,6 @@ app.post('/api/blog-draft', async (req, res) => {
 
     const blogText = first.message.content;
 
-    // ✉️ Send email if requested
     if (email && email.includes('@')) {
       try {
         const pdfDoc = new PDFDocument();
@@ -169,12 +163,10 @@ app.post('/api/blog-draft', async (req, res) => {
   }
 });
 
-// 🟢 Health check
 app.get('/', (req, res) => {
   res.send('PropertyFormula assistant is live.');
 });
 
-// 🚀 Start server
 app.listen(PORT, () => {
   console.log(`🚀 PropertyFormula backend running at http://localhost:${PORT}`);
 });
