@@ -1,5 +1,5 @@
 // server.js
-// ISO Timestamp: 🕒 2025-07-30T18:15:00Z
+// ISO Timestamp: 🕒 2025-07-30T18:25:00Z
 
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -18,10 +18,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// 🕒 Startup log
 console.log(`🕒 Server started at ${new Date().toISOString()}`);
 
-// File path setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -87,18 +85,19 @@ app.post('/api/blog-draft', async (req, res) => {
       temperature: 0.6
     });
 
-    console.log("\ud83e\uddea OpenAI raw response:", JSON.stringify(completion, null, 2));
+    console.log("🧪 OpenAI raw response:", JSON.stringify(completion, null, 2));
 
-    if (!completion?.choices || !Array.isArray(completion.choices) || !completion.choices.length) {
+    if (!completion || !completion.choices || !Array.isArray(completion.choices) || completion.choices.length === 0) {
       throw new Error('OpenAI returned no choices.');
     }
 
-    const firstChoice = completion.choices[0];
-    if (!firstChoice.message || !firstChoice.message.content) {
-      throw new Error('OpenAI returned an empty message.');
+    const first = completion.choices[0];
+
+    if (!first || !first.message || !first.message.content) {
+      throw new Error('OpenAI returned a blank or invalid message.');
     }
 
-    const blogText = firstChoice.message.content;
+    const blogText = first.message.content;
 
     if (email && email.includes('@')) {
       try {
@@ -159,12 +158,10 @@ app.post('/api/blog-draft', async (req, res) => {
   }
 });
 
-// Health check
 app.get('/', (req, res) => {
   res.send('PropertyFormula assistant is live.');
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`🚀 PropertyFormula backend running at http://localhost:${PORT}`);
 });
