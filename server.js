@@ -1,12 +1,12 @@
 // server.js
-// ISO Timestamp: 🕒 2025-07-30T18:58:00Z
+// ISO Timestamp: 🕒 2025-07-30T19:05:00Z (FAISS disabled — mimicking Coffee Assistant)
 
 import express from 'express';
 import bodyParser from 'body-parser';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
-import fs from 'fs';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 import PDFDocument from 'pdfkit';
@@ -19,7 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 3002;
 
 console.log(`🕒 Server started at ${new Date().toISOString()}`);
-console.log("🔒 VERSION CHECK: 2025-07-30T18:58Z — wrapped OpenAI with internal log");
+console.log("🔒 VERSION CHECK: 2025-07-30T19:05Z — FAISS disabled, Coffee Assistant logic active");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,29 +29,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const VECTOR_INDEX_PATH = path.resolve(__dirname, './vector_index.json');
-let vectorIndex = [];
-try {
-  const parsed = JSON.parse(fs.readFileSync(VECTOR_INDEX_PATH));
-  vectorIndex = Array.isArray(parsed) ? parsed : parsed.vectors;
-  console.log(`✅ Loaded ${vectorIndex.length} vectors`);
-} catch (err) {
-  console.error(`❌ Failed to load vector index: ${err.message}`);
-  process.exit(1);
-}
-
-function cosineSimilarity(a, b) {
-  const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
-  const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
-  const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
-  return dot / (magA * magB);
-}
-
-function getTopChunks(queryEmbedding, k = 5) {
-  return vectorIndex
-    .map(item => ({ ...item, score: cosineSimilarity(queryEmbedding, item.vector) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, k);
+// Simulated FAISS result
+async function queryFaissIndex(topic) {
+  return [
+    "RICS Red Book valuations provide formal, standards-compliant property assessments.",
+    "A Red Book valuation is often required by banks, courts, and regulatory bodies.",
+    "Only a chartered surveyor can deliver a Red Book valuation under RICS guidelines."
+  ];
 }
 
 app.post('/api/blog-draft', async (req, res) => {
@@ -61,19 +45,7 @@ app.post('/api/blog-draft', async (req, res) => {
   if (!topic) return res.status(400).json({ error: 'Missing topic' });
 
   try {
-    const embedding = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: topic
-    });
-
-    if (!embedding?.data?.[0]) {
-      throw new Error('Embedding failed or returned empty data.');
-    }
-
-    console.log("🔎 Embedding received");
-
-    const topChunks = getTopChunks(embedding.data[0].embedding, 5);
-    const context = topChunks.map(c => `• ${c.filename || c.text}`).join('\n');
+    const context = (await queryFaissIndex(topic)).join('\n');
 
     const prompt = `We are RICS chartered surveyors and valuers. Write a professional blog post on the topic: "${topic}". Use only the content below. Do not make anything up.\n\nDocuments:\n${context}\n\nInclude headline, intro, key points, and wrap-up.`;
 
@@ -84,7 +56,6 @@ app.post('/api/blog-draft', async (req, res) => {
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.6
       });
-
       console.log("🧪 OpenAI raw response:", JSON.stringify(completion, null, 2));
     } catch (error) {
       console.error("❌ OpenAI API call failed:", error.message);
@@ -111,9 +82,7 @@ app.post('/api/blog-draft', async (req, res) => {
         pdfDoc.end();
 
         const doc = new Document({
-          sections: [{
-            children: [new Paragraph({ children: [new TextRun(blogText)] })],
-          }],
+          sections: [{ children: [new Paragraph({ children: [new TextRun(blogText)] })] }],
         });
         const docBuffer = await Packer.toBuffer(doc);
 
@@ -170,3 +139,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 PropertyFormula backend running at http://localhost:${PORT}`);
 });
+
