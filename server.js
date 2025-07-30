@@ -1,5 +1,5 @@
 // server.js
-// ISO Timestamp: 🕒 2025-07-30T18:00:00Z
+// ISO Timestamp: 🕒 2025-07-30T18:15:00Z
 
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -21,17 +21,15 @@ const PORT = process.env.PORT || 3002;
 // 🕒 Startup log
 console.log(`🕒 Server started at ${new Date().toISOString()}`);
 
-// ✅ File path setup
+// File path setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 🔐 OpenAI
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// 📁 Load vector index
 const VECTOR_INDEX_PATH = path.resolve(__dirname, './vector_index.json');
 let vectorIndex = [];
 try {
@@ -43,7 +41,6 @@ try {
   process.exit(1);
 }
 
-// 🔍 Similarity logic
 function cosineSimilarity(a, b) {
   const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
   const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
@@ -61,7 +58,6 @@ function getTopChunks(queryEmbedding, k = 5) {
     .slice(0, k);
 }
 
-// 📮 /api/blog-draft
 app.post('/api/blog-draft', async (req, res) => {
   const { topic, email } = req.body;
   console.log("🔁 Received blog draft request:", topic);
@@ -91,17 +87,19 @@ app.post('/api/blog-draft', async (req, res) => {
       temperature: 0.6
     });
 
-    // 🧪 Debug OpenAI response
-    console.log("🧪 OpenAI raw response:", JSON.stringify(completion, null, 2));
+    console.log("\ud83e\uddea OpenAI raw response:", JSON.stringify(completion, null, 2));
 
-    // 🔐 Check that content exists
-    if (!completion?.choices || !completion.choices[0] || !completion.choices[0].message?.content) {
-      throw new Error('OpenAI returned malformed or empty blog content.');
+    if (!completion?.choices || !Array.isArray(completion.choices) || !completion.choices.length) {
+      throw new Error('OpenAI returned no choices.');
     }
 
-    const blogText = completion.choices[0].message.content;
+    const firstChoice = completion.choices[0];
+    if (!firstChoice.message || !firstChoice.message.content) {
+      throw new Error('OpenAI returned an empty message.');
+    }
 
-    // ✉️ Email if requested
+    const blogText = firstChoice.message.content;
+
     if (email && email.includes('@')) {
       try {
         const pdfDoc = new PDFDocument();
@@ -111,9 +109,7 @@ app.post('/api/blog-draft', async (req, res) => {
         pdfDoc.end();
 
         const doc = new Document({
-          sections: [{
-            children: [new Paragraph({ children: [new TextRun(blogText)] })],
-          }],
+          sections: [{ children: [new Paragraph({ children: [new TextRun(blogText)] })] }],
         });
         const docBuffer = await Packer.toBuffer(doc);
 
@@ -163,12 +159,12 @@ app.post('/api/blog-draft', async (req, res) => {
   }
 });
 
-// ✅ Health check
+// Health check
 app.get('/', (req, res) => {
   res.send('PropertyFormula assistant is live.');
 });
 
-// 🚀 Start server
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 PropertyFormula backend running at http://localhost:${PORT}`);
 });
