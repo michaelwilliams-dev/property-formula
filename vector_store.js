@@ -1,13 +1,13 @@
 // vector_store.js
-// ISO Timestamp: 🕒 2025-07-31T20:55:00Z (Final – input validation for OpenAI embedding)
+// ISO Timestamp: 🕒 2025-07-31T21:10:00Z (Stable – input validated, console-tagged)
 
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { createRequire } from 'module';
 import { OpenAI } from 'openai';
 
-const require = createRequire(import.meta.url);
+console.log("🟢 vector_store.js loaded: ISO 2025-07-31T21:10:00Z – version: stable-faiss-input-check");
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -20,18 +20,19 @@ export async function loadIndex() {
   return parsed.vectors || [];
 }
 
-export async function searchIndex(query, index) {
-  if (typeof query !== 'string' || !query.trim()) {
-    console.warn("⚠️ Invalid query input:", query);
+export async function searchIndex(rawQuery, index) {
+  const query = String(rawQuery || '').trim();
+
+  if (!query) {
+    console.warn("⚠️ Skipping embedding: empty or invalid query:", rawQuery);
     return [];
   }
 
-  const cleanQuery = query.trim();
-  console.log("🔍 Searching index for:", cleanQuery);
+  console.log("🔍 FAISS input query:", query);
 
   const response = await openai.embeddings.create({
     model: 'text-embedding-ada-002',
-    input: [cleanQuery],
+    input: [query],
   });
 
   const queryEmbedding = response.data[0].embedding;
@@ -41,8 +42,7 @@ export async function searchIndex(query, index) {
     return { ...item, score: dot };
   });
 
-  const sorted = scores.sort((a, b) => b.score - a.score);
-  return sorted.slice(0, 3);
+  return scores.sort((a, b) => b.score - a.score).slice(0, 3);
 }
 
 function dotProduct(a, b) {
