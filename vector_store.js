@@ -1,5 +1,5 @@
 // vector_store.js
-// ISO Timestamp: 🕒 2025-07-31T15:03:00Z (PropertyFormula Assistant FAISS support)
+// ISO Timestamp: 🕒 2025-07-31T20:40:00Z (Fixed input array for OpenAI embedding)
 
 import fs from 'fs/promises';
 import path from 'path';
@@ -17,13 +17,13 @@ export async function loadIndex() {
   const indexPath = path.join(__dirname, 'vector_index.json');
   const data = await fs.readFile(indexPath, 'utf-8');
   const parsed = JSON.parse(data);
-  return parsed.vectors; // ✅ This now extracts the actual array
+  return parsed.vectors; // ✅ Uses .vectors array inside JSON
 }
 
 export async function searchIndex(query, index) {
   const response = await openai.embeddings.create({
     model: 'text-embedding-ada-002',
-    input: query,
+    input: [query], // ✅ Fixed: must be an array
   });
 
   const queryEmbedding = response.data[0].embedding;
