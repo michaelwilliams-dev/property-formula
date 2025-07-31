@@ -1,12 +1,12 @@
 // vector_store.js
-// ISO Timestamp: 🕒 2025-07-31T21:10:00Z (Stable – input validated, console-tagged)
+// ISO Timestamp: 🕒 2025-07-31T21:20:00Z (Bulletproof final fix – query hard-validated)
 
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { OpenAI } from 'openai';
 
-console.log("🟢 vector_store.js loaded: ISO 2025-07-31T21:10:00Z – version: stable-faiss-input-check");
+console.log("🟢 vector_store.js loaded: ISO 2025-07-31T21:20:00Z – bulletproof version");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,18 +21,18 @@ export async function loadIndex() {
 }
 
 export async function searchIndex(rawQuery, index) {
-  const query = String(rawQuery || '').trim();
+  const query = (typeof rawQuery === 'string' ? rawQuery : String(rawQuery || '')).trim();
 
-  if (!query) {
-    console.warn("⚠️ Skipping embedding: empty or invalid query:", rawQuery);
+  if (!query || query.length < 3) {
+    console.warn("⚠️ Invalid or empty query passed to embedding:", rawQuery);
     return [];
   }
 
-  console.log("🔍 FAISS input query:", query);
+  console.log("🔍 Using cleaned embedding input:", query);
 
   const response = await openai.embeddings.create({
     model: 'text-embedding-ada-002',
-    input: [query],
+    input: [query], // ✅ Always a valid non-empty array
   });
 
   const queryEmbedding = response.data[0].embedding;
