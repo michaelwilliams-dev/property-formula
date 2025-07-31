@@ -1,5 +1,5 @@
 // vector_store.js
-// ISO Timestamp: 🕒 2025-07-31T20:45:00Z (Clean version with input validation)
+// ISO Timestamp: 🕒 2025-07-31T20:55:00Z (Final – input validation for OpenAI embedding)
 
 import fs from 'fs/promises';
 import path from 'path';
@@ -22,15 +22,16 @@ export async function loadIndex() {
 
 export async function searchIndex(query, index) {
   if (typeof query !== 'string' || !query.trim()) {
-    console.warn("⚠️ Skipping embedding: invalid query:", query);
+    console.warn("⚠️ Invalid query input:", query);
     return [];
   }
 
-  console.log("🔍 Searching index for:", query);
+  const cleanQuery = query.trim();
+  console.log("🔍 Searching index for:", cleanQuery);
 
   const response = await openai.embeddings.create({
     model: 'text-embedding-ada-002',
-    input: [query],
+    input: [cleanQuery],
   });
 
   const queryEmbedding = response.data[0].embedding;
