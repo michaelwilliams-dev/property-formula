@@ -1,5 +1,5 @@
 // server.js
-// ISO Timestamp: 🕒 2025-07-31T16:35:00Z (FAISS enabled — PropertyFormula blog backend)
+// ISO Timestamp: 🕒 2025-08-01T11:05:00Z (Fixed blogText response format)
 
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -30,7 +30,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ✅ Real FAISS query
 async function queryFaissIndex(topic) {
   const index = await loadIndex();
   const matches = await searchIndex(topic, index);
@@ -119,7 +118,8 @@ app.post('/api/blog-draft', async (req, res) => {
       }
     }
 
-    res.json({ topic, blog: blogText });
+    console.log("✅ Blog generated and sent to frontend.");
+    res.json({ blogText }); // ✅ Fixed to match frontend expectation
 
   } catch (err) {
     console.error('❌ Blog generation failed:', err.message);
