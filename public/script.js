@@ -1,35 +1,35 @@
-// script.js
-// ISO Timestamp: 🕒 2025-07-31T21:45:00Z (Assistant UI JS based on blog)
+// assistant_script.js
+// ISO Timestamp: 2025-07-30T19:30:00Z
 
-document.addEventListener("DOMContentLoaded", () => {
-  const generateButton = document.getElementById("ask");
-  const questionInput = document.getElementById("question");
-  const emailInput = document.getElementById("email");
-  const output = document.getElementById("response");
+// Set timestamp
+const timestamp = new Date().toISOString();
+document.getElementById('iso-timestamp').textContent = timestamp;
 
-  generateButton.addEventListener("click", async () => {
-    const question = questionInput.value.trim();
-    const email = emailInput.value.trim();
+// Event handler
+const askBtn = document.getElementById('ask');
+askBtn.addEventListener('click', async () => {
+  const question = document.getElementById('question').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const output = document.getElementById('response');
 
-    if (!question) {
-      output.textContent = "❌ Please enter a question.";
-      return;
-    }
+  if (!question) {
+    output.textContent = '❌ Please enter a question.';
+    return;
+  }
 
-    output.textContent = "⏳ Processing...";
+  output.textContent = '⏳ Thinking...';
 
-    try {
-      const res = await fetch("/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, email })
-      });
+  try {
+    const res = await fetch('/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, email })
+    });
 
-      const data = await res.json();
-      output.textContent = data.answer || "⚠️ No response received.";
-    } catch (err) {
-      console.error(err);
-      output.textContent = "❌ Request failed: " + err.message;
-    }
-  });
+    const data = await res.json();
+    output.textContent = data.answer || '⚠️ No answer returned.';
+  } catch (err) {
+    console.error(err);
+    output.textContent = '❌ Failed to contact assistant: ' + err.message;
+  }
 });
